@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>System Design on fr0sttt</title><link>https://fr0sttt.dev/categories/system-design/</link><description>Recent content in System Design on fr0sttt</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fr0sttt.dev/categories/system-design/index.xml" rel="self" type="application/rss+xml"/><item><title>Stop Coding, Start Thinking: The Mental Framework To Thinking Like An Software Architect</title><link>https://fr0sttt.dev/p/test/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fr0sttt.dev/p/test/</guid><description>&lt;p>You&amp;rsquo;re given a new project. The requirements are complex: &amp;ldquo;We need a system that allows users to upload sensitive documents. It must scale to 100 uploads per second, the process must be fast for the user, and the documents must pass OCR and validation before the user approves them. Oh, and it must be secure and highly available.&amp;rdquo;&lt;/p>
+&lt;h3 id="what-is-your-first-reaction">What is your first reaction?
+&lt;/h3>&lt;p>If your brain immediately jumps to &amp;ldquo;Okay, I&amp;rsquo;ll use &lt;strong>Node.js with Express and multer for the upload, and maybe a PostgreSQL table for the status&lt;/strong>,&amp;rdquo; you&amp;rsquo;re falling into the most common development trap: &lt;strong>thinking about the technology before thinking about the problem&lt;/strong>.&lt;/p>
+&lt;p>The difference between someone who just codes and an architect (or senior developer) isn&amp;rsquo;t the number of frameworks they know. It&amp;rsquo;s the existence of a mental framework to break down chaos and transform it into a coherent design.&lt;/p>
+&lt;p>This article will teach you this framework. It&amp;rsquo;s a four-step process for translating complex requirements into a robust architecture, before you even write the first line of code.&lt;/p>
+&lt;h1 id="our-case-study-creating-a-kyc-know-your-customer">Our Case Study: Creating a KYC (Know Your Customer)
+&lt;/h1>&lt;p>Imagine we&amp;rsquo;ve been tasked with building the backend for an identity verification process. The requirements are as follows:&lt;/p>
+&lt;h4 id="functional-requirements">Functional Requirements:
+&lt;/h4>&lt;ul>
+&lt;li>
+&lt;p>The user, through our mobile app, must be able to upload a photo of an identification document (e.g., a driver&amp;rsquo;s license).&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>The system must process this image, extracting data (name, ID number, etc.) via OCR (Optical Character Recognition).&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>The system needs to validate the extracted data with an external government service.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>The user&amp;rsquo;s status must be updated to &amp;ldquo;Verified&amp;rdquo; or &amp;ldquo;Rejected.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h4 id="non-functional-requirements-where-our-focus-will-be">Non-Functional Requirements (Where our focus will be):
+&lt;/h4>&lt;ul>
+&lt;li>
+&lt;p>Scalability: The system must handle normal new user flows and marketing campaign peaks. We estimate peaks of up to 100 uploads per second.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Latency: The user must receive an &amp;ldquo;upload received successfully&amp;rdquo; confirmation in under 2 seconds. The final verification result can take a few minutes.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Security: We are dealing with sensitive personal documents (PII - Personally Identifiable Information). Security is critical. We need to ensure data confidentiality and integrity, both in transit and at rest, in compliance with regulations like GDPR/LGPD.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Availability: The upload functionality must be highly available. The processing itself can tolerate minor failures and recover.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h1 id="step-1-ignore-the-technology-break-the-problem-down-into-verbs">Step 1: Ignore the Technology. Break the Problem Down into &amp;ldquo;Verbs&amp;rdquo;
+&lt;/h1>&lt;p>The first step is to resist the urge to code. Read the requirements and extract the essential actions, the system&amp;rsquo;s &amp;ldquo;verbs.&amp;rdquo; Tell the story of what needs to happen, in a simple and linear fashion. You don&amp;rsquo;t start building a house by choosing the brand of the hammer; you understand the steps: lay the foundation, raise the walls, install the roof.&lt;/p>
+&lt;p>For our KYC system, the story is as follows:&lt;/p>
+&lt;ol>
+&lt;li>The user needs to &lt;strong>UPLOAD&lt;/strong> a file.&lt;/li>
+&lt;li>The system needs to &lt;strong>STORE&lt;/strong> this file securely.&lt;/li>
+&lt;li>The system needs to &lt;strong>NOTIFY&lt;/strong> other parts that a new file has arrived.&lt;/li>
+&lt;li>A process needs to &lt;strong>READ&lt;/strong> the newly arrived file.&lt;/li>
+&lt;li>This process needs to &lt;strong>PROCESS&lt;/strong> the image (OCR).&lt;/li>
+&lt;li>This process needs to &lt;strong>VALIDATE&lt;/strong> the extracted data with an external service.&lt;/li>
+&lt;li>The system needs to &lt;strong>UPDATE&lt;/strong> the user&amp;rsquo;s status based on the result.&lt;/li>
+&lt;/ol>
+&lt;p>See the magic. We&amp;rsquo;ve traded a complex paragraph for a clear and discrete chain of events. Each verb is a link in the chain, and now we can reason about each of them in isolation, which is infinitely easier.&lt;/p>
+&lt;h1 id="step-2-identify-the-forces-constraints-at-play">Step 2: Identify the &amp;ldquo;Forces&amp;rdquo; (Constraints) at Play
+&lt;/h1>&lt;p>Now, we look at the non-functional requirements. They aren&amp;rsquo;t a wish list; they are the forces of nature that will push, pull, and bend our architecture. A good architect doesn&amp;rsquo;t fight these forces; they use them to shape the design.&lt;/p>
+&lt;p>For each force, your brain should set off an alarm:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>Force of Scalability + Latency: &amp;ldquo;100 uploads/second&amp;rdquo; and &amp;ldquo;confirmation in &amp;lt; 2s&amp;rdquo;.&lt;/strong>: Alarm bells should be going off in your head: &amp;ldquo;It&amp;rsquo;s impossible to manage this in a single monolithic API. The I/O bottleneck from receiving 100 concurrent files will saturate anything. And the full processing (OCR, validation) will definitely take longer than 2 seconds. Therefore, the user&amp;rsquo;s action (the upload) must be decoupled from everything else. The user flow cannot be synchronous.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Force of Availability + Resilience: &amp;ldquo;Upload always available&amp;rdquo; and &amp;ldquo;processing can fail&amp;rdquo;.&lt;/strong>: Alarm bells should be going off in your head: &amp;ldquo;What if the OCR service is down for 5 minutes? Under no circumstances can this prevent new uploads. This means there must be a &amp;lsquo;buffer&amp;rsquo;, a shock absorber between the entry point and the processors. If a processor dies, another one must be able to pick up the work from the queue.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Force of Security: &amp;ldquo;Sensitive documents, GDPR/LGPD&amp;rdquo;.&lt;/strong>: Alarm bells should be going off in your head: &amp;ldquo;Every point where this data touches is a legal and reputational liability. How does it travel over the network (encryption in transit)? How is it stored on disk (encryption at rest)? Who can read the original file? Who can see the OCR result? I need audit trails for every access.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h1 id="step-3-map-forces-to-design-patterns">Step 3: Map &amp;ldquo;Forces&amp;rdquo; to &amp;ldquo;Design Patterns&amp;rdquo;
+&lt;/h1>&lt;p>This is where seniority pays off. Experience is largely about having a mental catalog of solutions to recurring problems. You don&amp;rsquo;t reinvent the wheel; you recognize which type of terrain calls for which type of wheel.&lt;/p>
+&lt;p>Let&amp;rsquo;s map the intuitions from Step 2 to well-known architectural patterns:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>The force of &amp;ldquo;high-throughput ingress + decoupled slow processing&amp;rdquo;&lt;/strong> -&amp;gt; maps directly to the &lt;strong>Message Queue&lt;/strong> pattern. You instantly think: &amp;ldquo;This is a classic use case for SQS, RabbitMQ, or Kafka. The upload publishes a message, and workers consume it at their own pace.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>The force of &amp;ldquo;heavy file upload + not overwhelming the API&amp;rdquo;&lt;/strong> -&amp;gt; maps to the &lt;strong>Direct Upload to Object Storage (via Presigned URLs)&lt;/strong> pattern. You think: &amp;ldquo;I don&amp;rsquo;t want these megabytes passing through my API. The pattern is to offload this directly to S3, Google Cloud Storage, or Azure Blob Storage. My API only needs to do the lightweight job of generating a temporary, secure upload link.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>The force of &amp;ldquo;data security + granular access control&amp;rdquo;&lt;/strong> -&amp;gt; maps to the &lt;strong>Server-Side Encryption (SSE) and Principle of Least Privilege (IAM Roles)&lt;/strong> patterns. You think: &amp;ldquo;S3 solves the storage, but how do I lock it down? Provider-managed encryption is the standard. And the worker that performs OCR must only have READ permission, while the upload service only has WRITE permission.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>The force of &amp;ldquo;multiple steps in an asynchronous workflow&amp;rdquo;&lt;/strong> -&amp;gt; maps to the &lt;strong>State Machine or Saga&lt;/strong> pattern. You think: &amp;ldquo;I need to control this flow from &lt;code>'UPLOADED'&lt;/code> -&amp;gt; &lt;code>'PROCESSING'&lt;/code> -&amp;gt; &lt;code>'VALIDATED'&lt;/code> -&amp;gt; &lt;code>'FAILED'&lt;/code>. A state machine like AWS Step Functions is the way to organize this asynchronous chaos and ensure no file gets lost.&amp;rdquo;&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>What did we do here? We didn&amp;rsquo;t invent anything. We merely recognized the problems for which robust, industry-tested solutions already exist.&lt;/p>
+&lt;h1 id="step-4-always-think-in-trade-offs">Step 4: Always Think in Trade-offs
+&lt;/h1>&lt;p>This is the step that separates architects from mere implementers. No choice is free. For every pattern you adopt, you must ask yourself honestly: &lt;strong>&amp;ldquo;What&amp;rsquo;s the cost?&amp;rdquo;&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&amp;ldquo;&lt;strong>Okay, I chose a Message Queue.&lt;/strong> What&amp;rsquo;s the trade-off? I&amp;rsquo;ve added operational complexity. My system is now distributed. I need to worry about workers, about messages that fail and go to a Dead-Letter Queue (DLQ), and the flow becomes asynchronous, which means eventual consistency. Does the benefit (scalability and resilience) outweigh this cost? &lt;strong>Yes, for this problem, absolutely.&lt;/strong>&amp;rdquo;&lt;/li>
+&lt;/ul>
+&lt;p>&amp;ldquo;&lt;strong>Okay, Presigned URLs.&lt;/strong> What&amp;rsquo;s the trade-off? The client-side logic (mobile/web app) gets slightly more complex. It first needs to call my API to get the URL and only then perform the upload to S3. It&amp;rsquo;s one extra API call. Does the benefit (saving my API from bandwidth and processing saturation) outweigh this cost? &lt;strong>Yes, without a doubt.&lt;/strong>&amp;rdquo;&lt;/p>
+&lt;h1 id="conclusion-from-confusion-to-clarity">Conclusion: From Confusion to Clarity
+&lt;/h1>&lt;p>Observe what happened. We went from a nebulous set of requirements to a clear and well-defined architecture:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>A mobile client requests a &lt;strong>Presigned URL&lt;/strong> from a lightweight API endpoint.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>The client uploads the file directly to an S3 bucket, which is configured with &lt;strong>server-side encryption&lt;/strong>.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Upon receiving the new object, S3 triggers an event that creates a message in an &lt;strong>SQS Queue&lt;/strong>.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>A group of workers (services or Lambda functions) with &lt;strong>restricted IAM permissions&lt;/strong> consume messages from the queue.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>A &lt;strong>State Machine&lt;/strong> orchestrates the flow of each file through the OCR and external validation workers, finally updating the user&amp;rsquo;s status in the database.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>This is the mental framework that turns developers into architects. It moves the discussion from technology to the problem, from tools to principles. Practice it, and you will no longer be just writing code; you will be designing resilient, scalable, and secure systems on purpose.&lt;/p></description></item></channel></rss>

