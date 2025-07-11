@@ -67,7 +67,7 @@ When your backend generates a token, it must enclose it in a cookie with three M
 
 Your response header should look like this, no excuses:
 
-`Set-Cookie: session_token=SEU_TOKEN_AQUI; HttpOnly; Secure; SameSite=Strict`
+`Set-Cookie: session_token=YOUR_TOKEN_HERE; HttpOnly; Secure; SameSite=Strict`
 
 # Classic Alternative: Server Sessions
 
