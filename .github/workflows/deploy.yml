@@ -1,40 +1,51 @@
-name: Deploy Hugo site to GitHub Pages
+name: Deploy to Github Pages
 
-# Gatilho: Este workflow roda a cada push na branch 'main'
 on:
-  push:
-    branches:
-      - main  # Se sua branch principal tiver outro nome (ex: master), troque aqui
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      # 1. Baixa o código-fonte do seu repositório
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive' 
-          fetch-depth: 0
+    build:
+        runs-on: ubuntu-latest
 
-      # 2. Instala e configura o Hugo
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: 'latest' # Usa a versão mais recente do Hugo
-          extended: true
+        permissions:
+            # Give the default GITHUB_TOKEN write permission to commit and push the
+            # added or changed files to the repository.
+            contents: write
 
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      # 3. Constrói o site Hugo
-      - name: Build
-        run: hugo --minify # O comando que gera os arquivos HTML na pasta /public
+            - name: Cache Hugo resources
+              uses: actions/cache@v4
+              env:
+                  cache-name: cache-hugo-resources
+              with:
+                  path: resources
+                  key: ${{ env.cache-name }}
 
-      # 4. Faz o deploy para a branch 'gh-pages'
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # A branch para onde o site publicado será enviado.
-          publish_branch: gh-pages
-          # A pasta que contém o site construído pelo comando 'hugo'.
-          publish_dir: ./public
+            - uses: actions/setup-go@v5
+              with:
+                  go-version: "^1.17.0"
+            - run: go version
+
+            - name: Setup Hugo
+              uses: peaceiris/actions-hugo@v2
+              with:
+                  hugo-version: "latest"
+                  extended: true
+
+            - name: Build
+              run: hugo --minify --gc
+
+            - name: Deploy 🚀
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                  branch: gh-pages
+                  folder: public
+                  clean: true
+                  single-commit: true
