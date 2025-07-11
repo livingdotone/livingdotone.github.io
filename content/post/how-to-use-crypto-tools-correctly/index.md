@@ -4,7 +4,7 @@ description:
 slug: test
 # image: localstorage-token.png
 categories:
-  - system-design
+  - system design
 tags:
   - System Design
   - Use Case
