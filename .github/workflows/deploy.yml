@@ -22,7 +22,8 @@ jobs:
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest' # Usa a versão mais recente do Hugo
-          # extended: true # Descomente esta linha se seu tema usa Sass/SCSS
+          extended: true
+
 
       # 3. Constrói o site Hugo
       - name: Build
