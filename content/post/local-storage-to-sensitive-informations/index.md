@@ -20,7 +20,7 @@ I'm deeply irritated by the number of tutorials, bootcamps, and articles that pe
 
 This article isn't a debate. It's an eviction order for an insecure practice. If you teach this, stop.
 
-## First: What is LocalStorage?
+## First Things First: What is LocalStorage?
 
 It's a browser storage API. A simple JavaScript object where you throw key-value pairs. The end. It's designed to store trivial things, like a user's preference for a dark theme. Not to store the key to a safe. Using it for tokens is like writing down your bank password on a Post-it note and sticking it on your forehead.
 
@@ -28,7 +28,7 @@ It's a browser storage API. A simple JavaScript object where you throw key-value
 
 Before we even get into the security debacle, localStorage is a technically poor tool for modern web development.
 
-- **Blocks the Damn Main Thread**: It's synchronous. Every getItem or setItem locks up the UI. While the browser reads from disk, your application freezes. In 2025, with the obsession with performance and 60fps, using a synchronous API for I/O is just plain stupid.
+- **Blocks the Damn Main Thread**: It's synchronous. Every **getItem** or **setItem** locks up the UI. While the browser reads from disk, your application freezes. In 2025, with the obsession with performance and 60fps, using a synchronous API for I/O is just plain stupid.
 - **Only Storage Garbage (Strings)**: It doesn't store objects. You're forced to do the JSON.stringify() and JSON.parse() nonsense for everything, adding useless code and potential points of failure. It's primitive.
 - **Doesn't Talk to Web Workers**: Need to do heavy background processing to avoid crashing the page? Great. But your Web Workers don't have access to localStorage. It's useless for any minimally sophisticated architecture that requires shared state with background threads.
 - **Single Origin**: localStorage is locked to the exact origin. `app.site.com` can't read what `api.site.com` has stored. For authentication that needs to work across subdomains, it dies here.
@@ -39,7 +39,7 @@ For these reasons alone, he would be a poor choice. But now, let's get to the ma
 
 This is why any senior developer will laugh at you (or fire you) if you use localStorage for tokens.
 
-Any script injected into your page has full and unrestricted access to localStorage. ANY SCRIPT.
+Any script injected into your page has full and unrestricted access to localStorage. **ANY SCRIPT**.
 
 An XSS attack occurs when an attacker manages to inject a piece of JavaScript into your application. A malicious comment, an unhandled URL parameter, any slip-up. And all it takes is one line:
 
