@@ -28,8 +28,6 @@ Imagine we've been tasked with building the backend for an identity verification
 
 #### Functional Requirements:
 
-Functional Requirements:
-
 - The user, through our mobile app, must be able to upload a photo of an identification document (e.g., a driver's license).
 
 - The system must process this image, extracting data (name, ID number, etc.) via OCR (Optical Character Recognition).
